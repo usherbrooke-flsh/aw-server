@@ -7,6 +7,7 @@ import functools
 import json
 import logging
 import iso8601
+import urllib.request
 
 from aw_core.models import Event
 from aw_core.log import get_log_file_path
@@ -301,3 +302,50 @@ class ServerAPI:
             for line in log_file.readlines()[::-1]:
                 payload.append(json.loads(line))
         return payload, 200
+
+    def export_espace_un(self):
+        """Exports all buckets and their events to a format consistent across versions"""
+        buckets = self.get_buckets()
+        exported_buckets = {}
+        for bid in buckets.keys():
+            exported_buckets[bid] = self.export_bucket(bid)
+
+        req = urllib.request.Request(
+            url="https://espaceun.uqam.ca/rest-v1/activity-watch/add/",
+            data={
+                'content_json': str(exported_buckets).encode('base64', 'strict'),
+            },
+            method='POST'
+        )
+        req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
+        req.add_header("Content-type", "application/json; charset=UTF-8")
+
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    def get_categories(self):
+        response = {}
+
+        req = urllib.request.Request(url="https://espaceun.uqam.ca/rest-v1/xrxh_mrps/?limit_to=9999999")
+        req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
+        req.add_header("Content-type", "application/json; charset=UTF-8")
+
+        with urllib.request.urlopen(req) as resp:
+            response['categories'] = json.loads(resp.read().decode("utf-8"))
+
+        req = urllib.request.Request(url="https://espaceun.uqam.ca/rest-v1/xrxh_eaed/?limit_to=9999999")
+        req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
+        req.add_header("Content-type", "application/json; charset=UTF-8")
+
+        with urllib.request.urlopen(req) as resp:
+            response['sub'] = json.loads(resp.read().decode("utf-8"))
+
+        return response
+
+    def get_translations(self):
+        req = urllib.request.Request(url="https://espaceun.uqam.ca/rest-v1/xrxh_imsw/?limit_to=9999999")
+        req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
+        req.add_header("Content-type", "application/json; charset=UTF-8")
+
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read().decode("utf-8"))
