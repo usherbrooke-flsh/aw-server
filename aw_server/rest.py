@@ -347,3 +347,21 @@ class LogResource(Resource):
     @copy_doc(ServerAPI.get_log)
     def get(self):
         return current_app.api.get_log(), 200
+
+
+@api.route("/0/export-espaceun")
+class ExportEspaceUnResource(Resource):
+    def get(self):
+        return current_app.api.export_espace_un(), 200
+
+
+@api.route("/0/categories")
+class CategoryResource(Resource):
+    def get(self):
+        return current_app.api.get_categories(), 200
+
+
+@api.route("/0/translations")
+class TranslationResource(Resource):
+    def get(self):
+        return current_app.api.get_translations(), 200
