@@ -306,22 +306,25 @@ class ServerAPI:
     def export_espace_un(self):
         """Exports all buckets and their events to a format consistent across versions"""
         buckets = self.get_buckets()
-        exported_buckets = {}
         for bid in buckets.keys():
-            exported_buckets[bid] = self.export_bucket(bid)
+            bucket = self.export_bucket(bid)
 
-        req = urllib.request.Request(
-            url="https://espaceun.uqam.ca/rest-v1/activity-watch/add/",
-            data={
-                'content_json': str(exported_buckets).encode('base64', 'strict'),
-            },
-            method='POST'
-        )
-        req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
-        req.add_header("Content-type", "application/json; charset=UTF-8")
+            for events in range(0, len(bucket['events']), 500):
+                exported_buckets = {}
+                exported_buckets[bid] = bucket
+                exported_buckets[bid]['events'] = events
+                req = urllib.request.Request(
+                    url="https://espaceun.uqam.ca/rest-v1/activity-watch/add/",
+                    data={
+                        'content_json': str(exported_buckets).encode('base64', 'strict'),
+                    },
+                    method='POST',
+                    timeout=300
+                )
+                req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
+                req.add_header("Content-type", "application/json; charset=UTF-8")
 
-        with urllib.request.urlopen(req) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+                urllib.request.urlopen(req)
 
     def get_categories(self):
         response = {}
