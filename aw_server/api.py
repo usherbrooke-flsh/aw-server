@@ -8,6 +8,7 @@ import json
 import logging
 import iso8601
 import urllib.request
+import base64
 
 from aw_core.models import Event
 from aw_core.log import get_log_file_path
@@ -315,16 +316,15 @@ class ServerAPI:
                 exported_buckets[bid]['events'] = events
                 req = urllib.request.Request(
                     url="https://espaceun.uqam.ca/rest-v1/activity-watch/add/",
-                    data={
-                        'content_json': str(exported_buckets).encode('base64', 'strict'),
-                    },
-                    method='POST',
-                    timeout=300
+                    data=str({
+                        'content_json': base64.b64encode(bytes(str(exported_buckets), 'utf-8')),
+                    }).encode('utf-8'),
+                    method='POST'
                 )
                 req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
                 req.add_header("Content-type", "application/json; charset=UTF-8")
 
-                urllib.request.urlopen(req)
+                urllib.request.urlopen(req, timeout=300)
 
     def get_categories(self):
         response = {}
