@@ -9,6 +9,7 @@ import logging
 import iso8601
 import urllib.request
 import base64
+import ssl
 
 from aw_core.models import Event
 from aw_core.log import get_log_file_path
@@ -324,7 +325,7 @@ class ServerAPI:
                 req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
                 req.add_header("Content-type", "application/json; charset=UTF-8")
 
-                urllib.request.urlopen(req, timeout=300)
+                urllib.request.urlopen(req, timeout=300, context=self.get_context())
 
     def get_categories(self):
         response = {}
@@ -333,14 +334,14 @@ class ServerAPI:
         req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
         req.add_header("Content-type", "application/json; charset=UTF-8")
 
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, context=self.get_context()) as resp:
             response['categories'] = json.loads(resp.read().decode("utf-8"))
 
         req = urllib.request.Request(url="https://espaceun.uqam.ca/rest-v1/xrxh_eaed/?limit_to=9999999")
         req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
         req.add_header("Content-type", "application/json; charset=UTF-8")
 
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, context=self.get_context()) as resp:
             response['sub'] = json.loads(resp.read().decode("utf-8"))
 
         return response
@@ -350,5 +351,16 @@ class ServerAPI:
         req.add_header("Authorization", "Basic ZG91YmxlZGFzaGF3c2VjcmV0aWQ=")
         req.add_header("Content-type", "application/json; charset=UTF-8")
 
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, context=self.get_context()) as resp:
             return json.loads(resp.read().decode("utf-8"))
+
+
+    def get_context(self):
+        ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        ctx.options &= ~ssl.OP_NO_RENEGOTIATION
+        ctx.options |= 4
+        ctx.verify_mode = ssl.CERT_REQUIRED
+        ctx.check_hostname = True
+        ctx.load_default_certs()
+
+        return ctx
